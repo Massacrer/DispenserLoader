@@ -1,0 +1,14 @@
+name: DispenserLoader
+main: me.Massacrer.DispenserLoader.DispenserLoader
+version: 1.1
+author: Massacrer
+commands:
+  dload:
+    description: Loads Dispensers with player-specified items and quantities
+    usage: |
+           /<command>
+           Example: /<command> | Toggles activation state of the plugin for the user, and gives default fill item and amount (64 arrows)
+           Example: /<command> setwand (item id) | Sets wand item to specified item
+           Example: /<command> wand | Gives the player their wand item, if they don't already have it
+           Example: /<command> (material) (amount) | Sets the player's fill item and quantity to specified amounts
+           Example: /<command> (material) | Sets the player's fill item to specified item
