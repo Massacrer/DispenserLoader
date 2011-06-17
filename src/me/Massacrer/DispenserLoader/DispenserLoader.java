@@ -141,6 +141,9 @@ public class DispenserLoader extends JavaPlugin {
 		// arg[0] = material, arg[1] = number
 		
 		// Overall check to ensure the plugin only handles its own commands
+		// Probably irrelevant with CB only passing commands to plugins that
+		// registered them, but intelligince is never a bad thing
+		// Mostly
 		if (commandLabel.equalsIgnoreCase("DLOAD")) {
 			int argLength = args.length;
 			
@@ -287,17 +290,21 @@ public class DispenserLoader extends JavaPlugin {
 					return true;
 				}
 				
+				// Start of area-related code
 				boolean areaEmpty = false;
 				boolean areaFill = false;
 				boolean areaOperation = false;
 				String areaReportString = "";
+				//TODO: int areaMaterial = pConfig.material;
 				
 				// Toggles individual dispender empty mode
 				if (args[0].equalsIgnoreCase("empty")) {
 					if (!pConfig.blockAreaMode) {
 						boolean once = false;
-						if (argLength > 1 && args[1] == "once") {
-							once = true;
+						if (argLength > 1) {
+							if (args[1] == "once") {
+								once = true;
+							}
 						}
 						pConfig.disableAreaMode();
 						pConfig.toggleSingleClearFlag(once);
@@ -317,8 +324,14 @@ public class DispenserLoader extends JavaPlugin {
 				if (args[0].equalsIgnoreCase("fill")) {
 					if (!pConfig.blockAreaMode) {
 						boolean once = false;
-						if (argLength > 1 && args[1] == "once") {
-							once = true;
+						if (argLength > 1) {
+							if (args[1] == "once") {
+								once = true;
+							} else if (argLength == 2) {
+								try {
+									
+								}
+							}
 						}
 						pConfig.disableAreaMode();
 						pConfig.toggleSingleFillFlag(once);
