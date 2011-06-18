@@ -29,6 +29,7 @@ public class DispenserLoader extends JavaPlugin {
 	// class so they can call back
 	private final DLPlayerListener playerListener = new DLPlayerListener(this);
 	private final DLBlockListener blockListener = new DLBlockListener(this);
+	private final DLConfigManager fileInteractor = new DLConfigManager(this);
 	// Create the main HashMap that contains Players mapped to their settings
 	HashMap<Player, DLPlayerConfig> dlUsers = new HashMap<Player, DLPlayerConfig>();
 	// Create a PermissionHandler (used for interacting with Permissions)
@@ -53,6 +54,8 @@ public class DispenserLoader extends JavaPlugin {
 		log.info("DispenserLoader enabled");
 		// Self-explanatory
 		setupPermissions();
+		// Set up the file interaction part
+		fileInteractor.onEnable();
 	}
 	
 	/**
@@ -187,7 +190,7 @@ public class DispenserLoader extends JavaPlugin {
 			}
 			
 			// This is below the first check because that check can cause the
-			// player to become enabled, thus it is possible for this to fail
+			// player to become enabled, thus would be possible for this to fail
 			DLPlayerConfig pConfig = dlUsers.get(player);
 			
 			// Word-argument handling block
@@ -290,12 +293,30 @@ public class DispenserLoader extends JavaPlugin {
 					return true;
 				}
 				
-				// Start of area-related code
+				// Area mode toggle with argument length check
+				if (args[0].equalsIgnoreCase("area")) {
+					if (argLength > 1) {
+						player.sendMessage(ChatColor.RED
+								+ "Too many arguments: use \"dload area\" to toggle area mode");
+						return true;
+					}
+					pConfig.toggleAreaMode();
+					if (debug)
+						log.info("DLOAD: "
+									+ pName
+									+ "'s area mode toggled (area mode flag now "
+									+ pConfig.blockAreaMode + ").");
+					return true;
+				}
+				
+				// Start of area-related code, setting up some relevant
+				// variables
 				boolean areaEmpty = false;
 				boolean areaFill = false;
 				boolean areaOperation = false;
 				String areaReportString = "";
-				//TODO: int areaMaterial = pConfig.material;
+				int areaMaterial = pConfig.material;
+				int areaAmount = pConfig.amount;
 				
 				// Toggles individual dispender empty mode
 				if (args[0].equalsIgnoreCase("empty")) {
@@ -306,7 +327,6 @@ public class DispenserLoader extends JavaPlugin {
 								once = true;
 							}
 						}
-						pConfig.disableAreaMode();
 						pConfig.toggleSingleClearFlag(once);
 						if (debug)
 							log.info("DLOAD: " + pName
@@ -324,16 +344,9 @@ public class DispenserLoader extends JavaPlugin {
 				if (args[0].equalsIgnoreCase("fill")) {
 					if (!pConfig.blockAreaMode) {
 						boolean once = false;
-						if (argLength > 1) {
-							if (args[1] == "once") {
-								once = true;
-							} else if (argLength == 2) {
-								try {
-									
-								}
-							}
+						if (argLength > 1 && args[1] == "once") {
+							once = true;
 						}
-						pConfig.disableAreaMode();
 						pConfig.toggleSingleFillFlag(once);
 						if (debug)
 							log.info("DLOAD: " + pName
@@ -341,13 +354,22 @@ public class DispenserLoader extends JavaPlugin {
 									+ pConfig.singleFillMode + ").");
 						return true;
 					} else {
+						if (argLength == 2) {
+							try {
+								areaMaterial = Integer.parseInt(args[1]);
+							} catch (NumberFormatException e) {
+								reportInvalidInput(player);
+							}
+						}
 						areaFill = true;
 						areaOperation = true;
 						areaReportString = "filled up";
 					}
 				}
 				
-				// Sets single-block filling mode, keeps item settings
+				// Single block mode: sets single-block filling mode, keeps item
+				// settings
+				// Area mode: performs area add operation
 				if (args[0].equalsIgnoreCase("add")) {
 					if (!pConfig.blockAreaMode) {
 						pConfig.singleClearMode = false;
@@ -359,97 +381,31 @@ public class DispenserLoader extends JavaPlugin {
 									+ " reset to single add mode.");
 						return true;
 					} else {
+						if (argLength >= 2) {
+							try {
+								areaMaterial = Integer.parseInt(args[1]);
+								if (argLength == 3)
+									areaAmount = Integer.parseInt(args[2]);
+							} catch (NumberFormatException e) {
+								reportInvalidInput(player);
+							}
+						}
 						areaOperation = true;
 						areaReportString = "filled";
 					}
 				}
 				
-				// If player entered 2 ints, set these to material and amount
-				if (argLength == 2 || (argLength == 3 && pConfig.blockAreaMode)) {
-					if (argLength == 2) {
-						if (isInt(args[0]) && isInt(args[1])) {
-							pConfig.material = Integer.parseInt(args[0]);
-							pConfig.amount = Integer.parseInt(args[1]);
-							player.sendMessage(ChatColor.DARK_AQUA
-									+ "Material set to " + pConfig.material
-									+ ", amount set to " + pConfig.amount + ".");
-							if (debug)
-								log.info("DLOAD: player " + pName
-										+ "assigned material "
-										+ pConfig.material + " and amount "
-										+ pConfig.amount + ".");
-							return true;
-						}
-					} else {
-						if (isInt(args[1]) && isInt(args[2])) {
-							pConfig.material = Integer.parseInt(args[1]);
-							pConfig.amount = Integer.parseInt(args[2]);
-							player.sendMessage(ChatColor.DARK_AQUA
-									+ "Material set to " + pConfig.material
-									+ ", amount set to " + pConfig.amount + ".");
-							if (debug)
-								log.info("DLOAD: player " + pName
-										+ "assigned material "
-										+ pConfig.material + " and amount "
-										+ pConfig.amount + ".");
-							return true;
-						}
-					}
-				}
-				
-				// If player entered 1 int, set this to material
-				if (argLength == 1 || (argLength == 2 && pConfig.blockAreaMode)) {
-					if (argLength == 1) {
-						if (isInt(args[0])) {
-							pConfig.material = Integer.parseInt(args[0]);
-							player.sendMessage(ChatColor.DARK_AQUA
-									+ "Material set to " + pConfig.material
-									+ ".");
-							if (debug)
-								log.info("DLOAD: player " + pName
-										+ "assigned material "
-										+ pConfig.material + ".");
-							return true;
-						}
-						
-					} else {
-						if (isInt(args[1])) {
-							pConfig.material = Integer.parseInt(args[1]);
-							player.sendMessage(ChatColor.DARK_AQUA
-									+ "Material set to " + pConfig.material
-									+ ".");
-							if (debug)
-								log.info("DLOAD: player " + pName
-										+ "assigned material "
-										+ pConfig.material + ".");
-							return true;
-						}
-					}
-				}
-				
-				// Area mode toggle
-				if (args[0].equalsIgnoreCase("area") && argLength == 1) {
-					pConfig.toggleAreaMode();
-					if (debug)
-						log.info("DLOAD: "
-									+ pName
-									+ "'s area mode toggled (area mode flag now "
-									+ pConfig.blockAreaMode + ").");
-					return true;
-				}
-				
-				// Performs area operation if one of the commands has been used
-				// in area mode
+				// Performs area operation if one of the area commands has been
+				// used in area mode
 				if (areaOperation) {
 					if (pConfig.areaBlock1 instanceof Block
 							&& pConfig.areaBlock2 instanceof Block) {
-						int changed = blockListener.areaEffect(
+						int i_blocksChanged = blockListener.areaEffect(
 								pConfig.areaBlock1, pConfig.areaBlock2,
-								player.getWorld(), pConfig.material,
-								pConfig.amount,
-								areaFill, areaEmpty);
+								player.getWorld(), areaMaterial,
+								areaAmount, areaFill, areaEmpty);
 						player.sendMessage(ChatColor.DARK_AQUA + ""
-								+ changed
+								+ i_blocksChanged
 								+ " dispensers " + areaReportString + ".");
 						if (debug)
 							log.info("DLOAD: areaEffect called by player "
@@ -461,9 +417,41 @@ public class DispenserLoader extends JavaPlugin {
 					return true;
 				}
 				
-				// Return if too many arguments and mode is not area (already
-				// returned)
-				if (argLength > 2 && !(pConfig.blockAreaMode)) {
+				// If player entered 2 ints, set these to material and amount
+				if (argLength == 2) {
+					if (isInt(args[0]) && isInt(args[1])) {
+						pConfig.material = Integer.parseInt(args[0]);
+						pConfig.amount = Integer.parseInt(args[1]);
+						player.sendMessage(ChatColor.DARK_AQUA
+									+ "Material set to " + pConfig.material
+									+ ", amount set to " + pConfig.amount + ".");
+						if (debug)
+							log.info("DLOAD: player " + pName
+										+ "assigned material "
+										+ pConfig.material + " and amount "
+										+ pConfig.amount + ".");
+						return true;
+					}
+				}
+				
+				// If player entered 1 int, set this to material
+				if (argLength == 1) {
+					if (isInt(args[0])) {
+						pConfig.material = Integer.parseInt(args[0]);
+						player.sendMessage(ChatColor.DARK_AQUA
+									+ "Material set to " + pConfig.material
+									+ ".");
+						if (debug)
+							log.info("DLOAD: player " + pName
+										+ "assigned material "
+										+ pConfig.material + ".");
+						return true;
+					}
+				}
+				
+				// Return if we ever reach this point (all valid commands
+				// already handled)
+				if (argLength > 2) {
 					reportInvalidInput(sender);
 					return true;
 				}
