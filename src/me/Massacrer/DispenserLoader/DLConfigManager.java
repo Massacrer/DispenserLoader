@@ -1,28 +1,34 @@
 package me.Massacrer.DispenserLoader;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.util.Properties;
+import org.bukkit.util.config.Configuration;
 
-public class DLConfigManager  extends Properties {
-	private static final long serialVersionUID = 1L;
+class DLConfigManager {
+	@SuppressWarnings("unused")
 	private final DispenserLoader plugin;
 	private final String configFolder = "plugins/DispenserLoader/";
 	private final File mainConfigFile = new File(configFolder + "config.txt");
+	private final Configuration config = new Configuration(mainConfigFile);
 	
-	public DLConfigManager(DispenserLoader plugin) {
+	/**
+	 * @param plugin
+	 *            the main plugin
+	 */
+	DLConfigManager(DispenserLoader plugin) {
 		this.plugin = plugin;
+		config.load();
 	}
 	
-	void onEnable() {
-		try {
-			new File(configFolder).mkdir();
-			mainConfigFile.createNewFile();
-			load(new FileInputStream(mainConfigFile));
-		} catch (IOException e) {
-			//TODO: handle IOException
-		}
+	void setupConfigFile() {
+		
 	}
-	
 }
+/*
+ * config and permissions-related stuff
+ * required stuff:
+ * 
+ * infinite arrows available
+ * able to use plugin
+ * max number of dispensers to modify
+ * 
+ */

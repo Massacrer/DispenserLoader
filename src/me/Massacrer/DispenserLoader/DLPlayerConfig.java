@@ -26,6 +26,7 @@ class DLPlayerConfig {
 	boolean fillOnce = false;
 	static Logger log = null;
 	static DispenserLoader plugin = null;
+	boolean chestMode = false;
 	
 	@SuppressWarnings("static-access")
 	DLPlayerConfig(int m, int a, Player p, DispenserLoader plugin) {
@@ -179,6 +180,15 @@ class DLPlayerConfig {
 		log.info("lastAreaBlockSet = " + lastAreaBlockSet);
 		log.info("clearonce = " + clearOnce);
 		log.info("fillonce = " + fillOnce);
+		log.info("chestMode = " + chestMode);
 		log.info("End DLOAD debug dump");
+	}
+	
+	/**
+	 * Toggles mode between working with Dispensers and Chests
+	 */
+	void setChestMode(boolean mode) {
+		this.chestMode = mode;
+		player.sendMessage("Now working with " + (chestMode ? "dispensers" : "chests"));
 	}
 }

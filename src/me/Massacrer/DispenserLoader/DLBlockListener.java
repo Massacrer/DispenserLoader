@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.logging.Logger;
 import org.bukkit.block.Block;
-import org.bukkit.block.Dispenser;
+import org.bukkit.block.ContainerBlock;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -21,12 +21,12 @@ import org.bukkit.inventory.ItemStack;
  * 
  */
 
-public class DLBlockListener extends BlockListener {
+class DLBlockListener extends BlockListener {
 	
 	private final DispenserLoader plugin;
 	static Logger log = DispenserLoader.log;
 	
-	public DLBlockListener(final DispenserLoader plugin) {
+	DLBlockListener(final DispenserLoader plugin) {
 		this.plugin = plugin;
 	}
 	
@@ -47,52 +47,55 @@ public class DLBlockListener extends BlockListener {
 						+ ", block " + block.getX() + "," + block.getY() + ","
 						+ block.getZ());
 			}
-			if (block.getType() == Material.DISPENSER) {
+			if (block.getType() == (pConfig.chestMode ? Material.CHEST
+					: Material.DISPENSER)) {
+				String blockTypeStringUCase = (pConfig.chestMode ? "Chest"
+						: "Dispenser");
 				// Material.DISPENSER if it isnt the
 				// cause of the bug
 				// Checks which mode the player is in: single block or cuboid
 				if (pConfig.blockAreaMode == false) { // Code block for
 														// single block mode
-					Dispenser targetDispenser = (Dispenser) event.getBlock()
-							.getState();
+					ContainerBlock targetBlock = (ContainerBlock) event
+							.getBlock().getState();
 					if (pConfig.singleClearMode) {
-						emptyDispenser(targetDispenser);
+						emptyContainer(targetBlock);
 						if (pConfig.clearOnce) {
 							pConfig.clearOnce = false;
 							pConfig.singleClearMode = false;
 						}
 						player.sendMessage(ChatColor.DARK_AQUA
-								+ "Dispenser emptied");
+								+ blockTypeStringUCase + " emptied");
 						if (plugin.debug)
-							log.info("DLOAD: Dispenser hit by player "
-									+ player.getName()
+							log.info("DLOAD: " + blockTypeStringUCase
+									+ " hit by player " + player.getName()
 									+ " in single clear mode.");
 					}
 					if (pConfig.singleFillMode) {
-						fill(targetDispenser, pConfig.material);
+						fill(targetBlock, pConfig.material);
 						if (pConfig.fillOnce) {
 							plugin.dlUsers.get(player).fillOnce = false;
 							plugin.dlUsers.get(player).singleFillMode = false;
 						}
 						player.sendMessage(ChatColor.DARK_AQUA
-								+ "Dispenser filled up with item type "
+								+ blockTypeStringUCase
+								+ " filled up with item type "
 								+ pConfig.material);
 						if (plugin.debug)
-							log.info("DLOAD: Dispenser hit by player "
-									+ player.getName()
+							log.info("DLOAD: " + blockTypeStringUCase
+									+ " hit by player " + player.getName()
 									+ " in single fill mode. Material: "
 									+ pConfig.material + ".");
 					}
-					if (!pConfig.singleClearMode
-							&& !pConfig.singleFillMode) {
-						add(targetDispenser, pConfig.material,
-								pConfig.amount);
+					if (!pConfig.singleClearMode && !pConfig.singleFillMode) {
+						add(targetBlock, pConfig.material, pConfig.amount);
 						player.sendMessage(ChatColor.DARK_AQUA
-								+ "Dispenser filled with " + pConfig.amount
-								+ " of item type " + pConfig.material);
+								+ blockTypeStringUCase + " filled with "
+								+ pConfig.amount + " of item type "
+								+ pConfig.material);
 						if (plugin.debug)
-							log.info("DLOAD: Dispenser hit by player "
-									+ player.getName()
+							log.info("DLOAD: " + blockTypeStringUCase
+									+ " hit by player " + player.getName()
 									+ " in single add mode. Material: "
 									+ pConfig.material + ", amount: "
 									+ pConfig.amount + ".");
@@ -164,9 +167,12 @@ public class DLBlockListener extends BlockListener {
 	/**
 	 * Sends the player a message that their block selection has been recognised
 	 * 
-	 * @param blockNo Which block was set
-	 * @param player Player to inform
-	 * @param block Block that was selected
+	 * @param blockNo
+	 *            Which block was set
+	 * @param player
+	 *            Player to inform
+	 * @param block
+	 *            Block that was selected
 	 */
 	void sendBlockSetMsg(int blockNo, Player player, Block block) {
 		if (blockNo == 1) {
@@ -213,17 +219,24 @@ public class DLBlockListener extends BlockListener {
 	 * Causes an effect to multiple dispensers by determining the 3D area that
 	 * is selected, and then looping to cover this area
 	 * 
-	 * @param first First block in selection
-	 * @param second Second block in selection
-	 * @param world World the event was called in
-	 * @param material Material to update the dispensers with
-	 * @param amount Amount of material to update the dispensers with
-	 * @param fill Whether or not to fill the dispensers up
-	 * @param clear Whether or not to clear the dispensers
+	 * @param first
+	 *            First block in selection
+	 * @param second
+	 *            Second block in selection
+	 * @param world
+	 *            World the event was called in
+	 * @param material
+	 *            Material to update the dispensers with
+	 * @param amount
+	 *            Amount of material to update the dispensers with
+	 * @param fill
+	 *            Whether or not to fill the dispensers up
+	 * @param clear
+	 *            Whether or not to clear the dispensers
 	 * @return number of dispensers modified
 	 */
 	int areaEffect(Block first, Block second, World world, int material,
-			int amount, boolean fill, boolean clear) {
+			int amount, boolean fill, boolean clear, DLPlayerConfig pConfig) {
 		int numberChanged = 0;
 		x1 = first.getX();
 		y1 = first.getY();
@@ -241,23 +254,22 @@ public class DLBlockListener extends BlockListener {
 					Block block = (new Location(world, a, b, c, 0, 0))
 							.getBlock();
 					// Obligatory check for dispenser blocks
-					if (block.getType() == Material.DISPENSER) {
+					if (block.getType() == (pConfig.chestMode ? Material.CHEST : Material.DISPENSER)) {
 						// If command was /area empty, empty inventories
 						if (clear) {
-							emptyDispenser((Dispenser) block.getState());
+							emptyContainer((ContainerBlock) block.getState());
 							numberChanged++;
 							continue;
 						}
 						// If command was /area fill
 						if (fill) {
-							fill((Dispenser) block.getState(), material);
+							fill((ContainerBlock) block.getState(), material);
 							numberChanged++;
 							continue;
 						}
 						// If command was /area add
 						if (!fill && !clear) {
-							add((Dispenser) block.getState(),
-									material, amount);
+							add((ContainerBlock) block.getState(), material, amount);
 							numberChanged++;
 							continue;
 						}
@@ -271,19 +283,22 @@ public class DLBlockListener extends BlockListener {
 	/**
 	 * Empties a single dispenser
 	 * 
-	 * @param dispenser Dispenser to empty
+	 * @param dispenser
+	 *            Dispenser to empty
 	 */
-	void emptyDispenser(Dispenser dispenser) {
-		dispenser.getInventory().clear();
+	void emptyContainer(ContainerBlock container) {
+		container.getInventory().clear();
 	}
 	
 	/**
 	 * Fills a single dispenser with material
 	 * 
-	 * @param target Dispenser to fill
-	 * @param material Material to fill it with
+	 * @param target
+	 *            Dispenser to fill
+	 * @param material
+	 *            Material to fill it with
 	 */
-	void fill(Dispenser target, int material) {
+	void fill(ContainerBlock target, int material) {
 		ItemStack items = new ItemStack(material, 64);
 		HashMap<Integer, ItemStack> overflowItems = new HashMap<Integer, ItemStack>();
 		do {
@@ -294,11 +309,14 @@ public class DLBlockListener extends BlockListener {
 	/**
 	 * Adds an amount of material to a single dispenser
 	 * 
-	 * @param dispenser Dispenser to add to
-	 * @param material Material to put in
-	 * @param amount Amount of material to put in
+	 * @param target
+	 *            Dispenser to add to
+	 * @param material
+	 *            Material to put in
+	 * @param amount
+	 *            Amount of material to put in
 	 */
-	void add(Dispenser dispenser, int material, int amount) {
+	void add(ContainerBlock target, int material, int amount) {
 		ArrayList<ItemStack> items = new ArrayList<ItemStack>();
 		try {
 			if (amount <= 64) {
@@ -321,10 +339,10 @@ public class DLBlockListener extends BlockListener {
 		}
 		for (int i = 0; i < items.size(); i++) {
 			if (plugin.debug) {
-				log.info("DL: addToDispenser: i = " + i
+				log.info("DL: addToContainerBlock: i = " + i
 						+ ", i.items.getType() = " + items.get(i).getTypeId());
 			}
-			dispenser.getInventory().addItem(items.get(i));
+			target.getInventory().addItem(items.get(i));
 		}
 	}
 }
