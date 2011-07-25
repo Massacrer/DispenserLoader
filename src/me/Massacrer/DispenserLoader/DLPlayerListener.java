@@ -10,7 +10,7 @@ import me.Massacrer.DispenserLoader.DispenserLoader;
  * @author Massacrer
  * 
  */
-public class DLPlayerListener extends PlayerListener {
+class DLPlayerListener extends PlayerListener {
 	private final DispenserLoader plugin;
 	
 	public DLPlayerListener(DispenserLoader instance) {

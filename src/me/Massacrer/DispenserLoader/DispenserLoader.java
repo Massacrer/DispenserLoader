@@ -17,7 +17,8 @@ import com.nijiko.permissions.PermissionHandler;
 import com.nijikokun.bukkit.Permissions.Permissions;
 
 /**
- * Dispenser Loader Main class
+ * Dispenser Loader Main class Copious amounts of comments for showing the code
+ * to my java-inexperienced friend
  * 
  * @author Massacrer
  * 
@@ -29,7 +30,6 @@ public class DispenserLoader extends JavaPlugin {
 	// class so they can call back
 	private final DLPlayerListener playerListener = new DLPlayerListener(this);
 	private final DLBlockListener blockListener = new DLBlockListener(this);
-	private final DLConfigManager fileInteractor = new DLConfigManager(this);
 	// Create the main HashMap that contains Players mapped to their settings
 	HashMap<Player, DLPlayerConfig> dlUsers = new HashMap<Player, DLPlayerConfig>();
 	// Create a PermissionHandler (used for interacting with Permissions)
@@ -54,8 +54,6 @@ public class DispenserLoader extends JavaPlugin {
 		log.info("DispenserLoader enabled");
 		// Self-explanatory
 		setupPermissions();
-		// Set up the file interaction part
-		fileInteractor.onEnable();
 	}
 	
 	/**
@@ -81,11 +79,11 @@ public class DispenserLoader extends JavaPlugin {
 	 *            Material to enable the player with
 	 * @param amount
 	 *            Amount to enable the player with
-	 * @return false if amount is over 600, otherwise true
+	 * @return false if amount is over 576, otherwise true
 	 */
 	boolean hmEnable(Player player, int material, int amount) {
-		// Intelligence check - dont use more than 600 material
-		if (amount > 600) {
+		// Intelligence check - dont use more than 576 material
+		if (amount > 576) {
 			return false;
 		}
 		// Create a new DLPlayerConfig object, with some starting values
@@ -220,8 +218,24 @@ public class DispenserLoader extends JavaPlugin {
 					return true;
 				}
 				
+				// change whether the plugin is working with dispensers or
+				// chests
+				if (args[0].equalsIgnoreCase("mode")) {
+					if (argLength > 1) {
+						if (args[1].equalsIgnoreCase("chests")) {
+							pConfig.setChestMode(true);
+						} else if (args[1].equalsIgnoreCase("dispensers")) {
+							pConfig.setChestMode(false);
+						} else {
+							player.sendMessage(ChatColor.RED
+									+ "Specify a valid option (chests or dispensers) for this command");
+						}
+					}
+					return true;
+				}
+				
 				// If first argument is "SetWand"...
-				if (args[0].equalsIgnoreCase("setwand")) {
+				if (args[0].equalsIgnoreCase("setwand") && argLength > 1) {
 					// Try to set wandItem to item id specified as next argument
 					try {
 						pConfig.setWandItem(Integer.parseInt(args[1]));
@@ -258,6 +272,7 @@ public class DispenserLoader extends JavaPlugin {
 					pConfig.clearOnce = false;
 					pConfig.material = 262;
 					pConfig.amount = 64;
+					pConfig.chestMode = false;
 					player.sendMessage(ChatColor.DARK_AQUA
 							+ "Mode reset to single-block adding with 64 arrows");
 					if (debug)
@@ -302,10 +317,9 @@ public class DispenserLoader extends JavaPlugin {
 					}
 					pConfig.toggleAreaMode();
 					if (debug)
-						log.info("DLOAD: "
-									+ pName
-									+ "'s area mode toggled (area mode flag now "
-									+ pConfig.blockAreaMode + ").");
+						log.info("DLOAD: " + pName
+								+ "'s area mode toggled (area mode flag now "
+								+ pConfig.blockAreaMode + ").");
 					return true;
 				}
 				
@@ -402,17 +416,20 @@ public class DispenserLoader extends JavaPlugin {
 							&& pConfig.areaBlock2 instanceof Block) {
 						int i_blocksChanged = blockListener.areaEffect(
 								pConfig.areaBlock1, pConfig.areaBlock2,
-								player.getWorld(), areaMaterial,
-								areaAmount, areaFill, areaEmpty);
-						player.sendMessage(ChatColor.DARK_AQUA + ""
+								player.getWorld(), areaMaterial, areaAmount,
+								areaFill, areaEmpty, dlUsers.get(player));
+						player.sendMessage(ChatColor.DARK_AQUA
+								+ ""
 								+ i_blocksChanged
-								+ " dispensers " + areaReportString + ".");
+								+ (pConfig.chestMode ? " chests "
+										: " dispensers ") + areaReportString
+								+ ".");
 						if (debug)
 							log.info("DLOAD: areaEffect called by player "
 									+ pName);
 					} else {
 						player.sendMessage(ChatColor.RED
-								+ "Select the opposite corners of the dispenser area first");
+								+ "Select the opposite corners of the selection area first");
 					}
 					return true;
 				}
@@ -423,13 +440,12 @@ public class DispenserLoader extends JavaPlugin {
 						pConfig.material = Integer.parseInt(args[0]);
 						pConfig.amount = Integer.parseInt(args[1]);
 						player.sendMessage(ChatColor.DARK_AQUA
-									+ "Material set to " + pConfig.material
-									+ ", amount set to " + pConfig.amount + ".");
+								+ "Material set to " + pConfig.material
+								+ ", amount set to " + pConfig.amount + ".");
 						if (debug)
 							log.info("DLOAD: player " + pName
-										+ "assigned material "
-										+ pConfig.material + " and amount "
-										+ pConfig.amount + ".");
+									+ "assigned material " + pConfig.material
+									+ " and amount " + pConfig.amount + ".");
 						return true;
 					}
 				}
@@ -439,12 +455,11 @@ public class DispenserLoader extends JavaPlugin {
 					if (isInt(args[0])) {
 						pConfig.material = Integer.parseInt(args[0]);
 						player.sendMessage(ChatColor.DARK_AQUA
-									+ "Material set to " + pConfig.material
-									+ ".");
+								+ "Material set to " + pConfig.material + ".");
 						if (debug)
 							log.info("DLOAD: player " + pName
-										+ "assigned material "
-										+ pConfig.material + ".");
+									+ "assigned material " + pConfig.material
+									+ ".");
 						return true;
 					}
 				}
@@ -467,16 +482,16 @@ public class DispenserLoader extends JavaPlugin {
 	 * @return True if player is allowed, otherwise false
 	 */
 	boolean playerAllowed(Player player) {
-		boolean allowed = false;
-		if (this.getServer().getPluginManager().getPlugin("Permissions") != null) {
+		if (this.getServer().getPluginManager().getPlugin("Permissions") != null
+				&& DispenserLoader.permissionHandler != null) {
 			if (DispenserLoader.permissionHandler.has(player, "dload.use")) {
-				allowed = true;
+				return true;
 			}
 		}
 		if (player.isOp())
-			allowed = true;
+			return true;
 		
-		return allowed;
+		return false;
 	}
 	
 	/**
