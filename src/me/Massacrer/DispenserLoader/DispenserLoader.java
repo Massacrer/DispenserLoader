@@ -30,8 +30,6 @@ public class DispenserLoader extends JavaPlugin {
 	// class so they can call back
 	private final DLPlayerListener playerListener = new DLPlayerListener(this);
 	private final DLBlockListener blockListener = new DLBlockListener(this);
-	@SuppressWarnings("unused")
-	private final DLConfigManager configManager = new DLConfigManager(this);
 	// Create the main HashMap that contains Players mapped to their settings
 	HashMap<Player, DLPlayerConfig> dlUsers = new HashMap<Player, DLPlayerConfig>();
 	// Create a PermissionHandler (used for interacting with Permissions)
@@ -274,6 +272,7 @@ public class DispenserLoader extends JavaPlugin {
 					pConfig.clearOnce = false;
 					pConfig.material = 262;
 					pConfig.amount = 64;
+					pConfig.chestMode = false;
 					player.sendMessage(ChatColor.DARK_AQUA
 							+ "Mode reset to single-block adding with 64 arrows");
 					if (debug)
@@ -419,9 +418,12 @@ public class DispenserLoader extends JavaPlugin {
 								pConfig.areaBlock1, pConfig.areaBlock2,
 								player.getWorld(), areaMaterial, areaAmount,
 								areaFill, areaEmpty, dlUsers.get(player));
-						player.sendMessage(ChatColor.DARK_AQUA + ""
-								+ i_blocksChanged + (pConfig.chestMode ? " chests " : " dispensers ")
-								+ areaReportString + ".");
+						player.sendMessage(ChatColor.DARK_AQUA
+								+ ""
+								+ i_blocksChanged
+								+ (pConfig.chestMode ? " chests "
+										: " dispensers ") + areaReportString
+								+ ".");
 						if (debug)
 							log.info("DLOAD: areaEffect called by player "
 									+ pName);
@@ -480,16 +482,16 @@ public class DispenserLoader extends JavaPlugin {
 	 * @return True if player is allowed, otherwise false
 	 */
 	boolean playerAllowed(Player player) {
-		boolean allowed = false;
-		if (this.getServer().getPluginManager().getPlugin("Permissions") != null) {
+		if (this.getServer().getPluginManager().getPlugin("Permissions") != null
+				&& DispenserLoader.permissionHandler != null) {
 			if (DispenserLoader.permissionHandler.has(player, "dload.use")) {
-				allowed = true;
+				return true;
 			}
 		}
 		if (player.isOp())
-			allowed = true;
+			return true;
 		
-		return allowed;
+		return false;
 	}
 	
 	/**

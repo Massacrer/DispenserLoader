@@ -189,6 +189,6 @@ class DLPlayerConfig {
 	 */
 	void setChestMode(boolean mode) {
 		this.chestMode = mode;
-		player.sendMessage("Now working with " + (chestMode ? "dispensers" : "chests"));
+		player.sendMessage("Now working with " + (chestMode ? "chests" : "dispensers"));
 	}
 }
