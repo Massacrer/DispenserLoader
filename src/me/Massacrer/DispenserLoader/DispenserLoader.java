@@ -577,3 +577,4 @@ public class DispenserLoader extends JavaPlugin {
 		return false;
 	}
 }
+// This is a comment to trick Egit into thinking the project is modified
