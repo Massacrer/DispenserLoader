@@ -40,7 +40,8 @@ class DLPlayerConfig {
 	/**
 	 * Sets player's wand item
 	 * 
-	 * @param item Item to set wandItem to
+	 * @param item
+	 *            Item to set wandItem to
 	 */
 	void setWandItem(int item) {
 		this.wandItem = item;
@@ -53,7 +54,8 @@ class DLPlayerConfig {
 	/**
 	 * Sets player's material
 	 * 
-	 * @param material Material to set player's Material to
+	 * @param material
+	 *            Material to set player's Material to
 	 */
 	void setMaterial(int material) {
 		this.material = material;
@@ -66,7 +68,8 @@ class DLPlayerConfig {
 	/**
 	 * Sets player's amount of material
 	 * 
-	 * @param amount Amount of material to set player's amount to
+	 * @param amount
+	 *            Amount of material to set player's amount to
 	 */
 	void setAmount(int amount) {
 		this.amount = amount;
@@ -98,13 +101,14 @@ class DLPlayerConfig {
 		}
 		if (plugin.debug)
 			log.info("DL: toggleAreaMode called for player " + player.getName()
-					+ " (areamode now "
-					+ this.blockAreaMode + ").");
+					+ " (areamode now " + this.blockAreaMode + ").");
 	}
 	
 	/**
 	 * Toggles the user's single block fill flag
-	 * @param once Whether or not to only do the operation once
+	 * 
+	 * @param once
+	 *            Whether or not to only do the operation once
 	 */
 	void toggleSingleFillFlag(boolean once) {
 		if (this.singleFillMode == true) {
@@ -121,27 +125,26 @@ class DLPlayerConfig {
 		}
 		if (plugin.debug)
 			log.info("DL: toggleSingleFillFlag called for player "
-					+ player.getName() + "(fillflag now "
-					+ this.singleFillMode + ").");
+					+ player.getName() + "(fillflag now " + this.singleFillMode
+					+ ").");
 	}
 	
 	/**
 	 * Toggles player's single-block clear flag
 	 * 
-	 * @param once Whether or not to only do the operation once
+	 * @param once
+	 *            Whether or not to only do the operation once
 	 */
 	void toggleSingleClearFlag(boolean once) {
 		if (this.singleClearMode == true) {
 			this.singleClearMode = false;
-			player.sendMessage(ChatColor.DARK_AQUA
-					+ "Mode set to add");
+			player.sendMessage(ChatColor.DARK_AQUA + "Mode set to add");
 		} else {
 			this.singleClearMode = true;
 			if (once) {
 				this.clearOnce = true;
 			}
-			player.sendMessage(ChatColor.DARK_AQUA
-					+ "Mode set to empty");
+			player.sendMessage(ChatColor.DARK_AQUA + "Mode set to empty");
 		}
 		if (plugin.debug)
 			log.info("DL: toggleSingleClearFlag called for player "
@@ -149,11 +152,12 @@ class DLPlayerConfig {
 					+ this.singleClearMode + ").");
 	}
 	
-	 /**
-	  * disables area mode, and clears blocks
-	  */
+	/**
+	 * disables area mode, and clears blocks
+	 */
 	void disableAreaMode() {
-		//player.sendMessage(ChatColor.DARK_AQUA + "Now in single-block adding mode");
+		// player.sendMessage(ChatColor.DARK_AQUA +
+		// "Now in single-block adding mode");
 		this.blockAreaMode = false;
 		this.areaBlock1 = null;
 		this.areaBlock2 = null;
@@ -189,6 +193,7 @@ class DLPlayerConfig {
 	 */
 	void setChestMode(boolean mode) {
 		this.chestMode = mode;
-		player.sendMessage("Now working with " + (chestMode ? "chests" : "dispensers"));
+		player.sendMessage(ChatColor.DARK_AQUA + "Now working with "
+				+ (chestMode ? "chests" : "dispensers"));
 	}
 }

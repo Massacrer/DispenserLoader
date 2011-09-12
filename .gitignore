@@ -2,3 +2,5 @@
 /.classpath
 /.project
 /bin
+/nbproject/private/
+/nbproject
