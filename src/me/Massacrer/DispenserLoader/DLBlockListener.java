@@ -6,10 +6,12 @@ import java.util.logging.Logger;
 import org.bukkit.block.Block;
 import org.bukkit.block.ContainerBlock;
 import org.bukkit.ChatColor;
+import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
+import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockDamageEvent;
 import org.bukkit.event.block.BlockListener;
 import org.bukkit.inventory.ItemStack;
@@ -34,6 +36,7 @@ class DLBlockListener extends BlockListener {
 	 * Called by Bukkit, main code block for this class
 	 */
 	public void onBlockDamage(BlockDamageEvent event) {
+		event.setCancelled(true);
 		Block block = event.getBlock();
 		Player player = event.getPlayer();
 		DLPlayerConfig pConfig = plugin.dlUsers.get(player);
@@ -56,8 +59,7 @@ class DLBlockListener extends BlockListener {
 				// Checks which mode the player is in: single block or cuboid
 				if (pConfig.blockAreaMode == false) { // Code block for
 														// single block mode
-					ContainerBlock targetBlock = (ContainerBlock) event
-							.getBlock().getState();
+					ContainerBlock targetBlock = (ContainerBlock) event.getBlock().getState();
 					if (pConfig.singleClearMode) {
 						emptyContainer(targetBlock);
 						if (pConfig.clearOnce) {
@@ -164,6 +166,16 @@ class DLBlockListener extends BlockListener {
 		} // End of run validity check code
 	} // End of onBlockDamage code
 	
+	public void onBlockBreak(BlockBreakEvent event) {
+		if (event.getPlayer().getGameMode() == GameMode.CREATIVE) {
+			event.setCancelled(true);
+			BlockDamageEvent bde = new BlockDamageEvent(event.getPlayer(),
+					event.getBlock(), event.getPlayer().getItemInHand(), false);
+			bde.setCancelled(true);
+			this.onBlockDamage(bde);
+		}
+	}
+	
 	/**
 	 * Sends the player a message that their block selection has been recognised
 	 * 
@@ -181,37 +193,6 @@ class DLBlockListener extends BlockListener {
 		} else {
 			player.sendMessage(ChatColor.DARK_AQUA + "Second block set at "
 					+ block.getX() + "," + block.getY() + "," + block.getZ());
-		}
-	}
-	
-	// These numbers are important to the function of areaEffect()
-	int x1 = 0;
-	int x2 = 0;
-	int y1 = 0;
-	int y2 = 0;
-	int z1 = 0;
-	int z2 = 0;
-	
-	/**
-	 * Takes 3 pairs of numbers and arranges them so that they are all in the
-	 * order (smaller, larger). Used by areaEffect().
-	 */
-	void ascendingOrder() {
-		int temp = 0;
-		if (x1 > x2) {
-			temp = x1;
-			x1 = x2;
-			x2 = temp;
-		}
-		if (y1 > y2) {
-			temp = y1;
-			y1 = y2;
-			y2 = temp;
-		}
-		if (z1 > z2) {
-			temp = z1;
-			z1 = z2;
-			z2 = temp;
 		}
 	}
 	
@@ -238,23 +219,39 @@ class DLBlockListener extends BlockListener {
 	int areaEffect(Block first, Block second, World world, int material,
 			int amount, boolean fill, boolean clear, DLPlayerConfig pConfig) {
 		int numberChanged = 0;
-		x1 = first.getX();
-		y1 = first.getY();
-		z1 = first.getZ();
-		x2 = second.getX();
-		y2 = second.getY();
-		z2 = second.getZ();
-		ascendingOrder();
+		int x1 = first.getX();
+		int y1 = first.getY();
+		int z1 = first.getZ();
+		int x2 = second.getX();
+		int y2 = second.getY();
+		int z2 = second.getZ();
+		
+		int temp = 0;
+		if (x1 > x2) {
+			temp = x1;
+			x1 = x2;
+			x2 = temp;
+		}
+		if (y1 > y2) {
+			temp = y1;
+			y1 = y2;
+			y2 = temp;
+		}
+		if (z1 > z2) {
+			temp = z1;
+			z1 = z2;
+			z2 = temp;
+		}
 		
 		for (int a = x1; a <= x2; a++) {
 			for (int b = y1; b <= y2; b++) {
 				for (int c = z1; c <= z2; c++) {
 					// Gets the block at the coordinates at the current point in
 					// the for loops
-					Block block = (new Location(world, a, b, c, 0, 0))
-							.getBlock();
+					Block block = (new Location(world, a, b, c, 0, 0)).getBlock();
 					// Obligatory check for dispenser blocks
-					if (block.getType() == (pConfig.chestMode ? Material.CHEST : Material.DISPENSER)) {
+					if (block.getType() == (pConfig.chestMode ? Material.CHEST
+							: Material.DISPENSER)) {
 						// If command was /area empty, empty inventories
 						if (clear) {
 							emptyContainer((ContainerBlock) block.getState());
@@ -269,7 +266,8 @@ class DLBlockListener extends BlockListener {
 						}
 						// If command was /area add
 						if (!fill && !clear) {
-							add((ContainerBlock) block.getState(), material, amount);
+							add((ContainerBlock) block.getState(), material,
+									amount);
 							numberChanged++;
 							continue;
 						}

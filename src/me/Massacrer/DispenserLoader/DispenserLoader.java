@@ -48,6 +48,8 @@ public class DispenserLoader extends JavaPlugin {
 		// Register to be informed by the server when events occur
 		pluginManager.registerEvent(Event.Type.BLOCK_DAMAGE, blockListener,
 				Priority.Normal, this);
+		pluginManager.registerEvent(Event.Type.BLOCK_BREAK, blockListener,
+				Priority.Normal, this);
 		pluginManager.registerEvent(Event.Type.PLAYER_QUIT, playerListener,
 				Priority.Normal, this);
 		// Output to log that the plugin is enabled
@@ -520,12 +522,11 @@ public class DispenserLoader extends JavaPlugin {
 	 * Sets up the permissions handler for the plugin
 	 */
 	private void setupPermissions() {
-		Plugin permissionsPlugin = this.getServer().getPluginManager()
-				.getPlugin("Permissions");
+		Plugin permissionsPlugin = this.getServer().getPluginManager().getPlugin(
+				"Permissions");
 		if (DispenserLoader.permissionHandler == null) {
 			if (permissionsPlugin != null) {
-				DispenserLoader.permissionHandler = ((Permissions) permissionsPlugin)
-						.getHandler();
+				DispenserLoader.permissionHandler = ((Permissions) permissionsPlugin).getHandler();
 				log.info("DispenserLoader: Using Permissions system");
 			} else {
 				log.info("DispenserLoader: Permission system not detected, using default permissions");
