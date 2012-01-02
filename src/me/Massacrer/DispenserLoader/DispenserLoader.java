@@ -26,10 +26,11 @@ import com.nijikokun.bukkit.Permissions.Permissions;
 public class DispenserLoader extends JavaPlugin {
 	// Define the logger (used to report to server console)
 	static final Logger log = Logger.getLogger("Minecraft");
-	// Define other parts of this plugin, and pass them a reference to this
+	// Define other parts of this plugin, and pass them references to this
 	// class so they can call back
 	private final DLPlayerListener playerListener = new DLPlayerListener(this);
 	private final DLBlockListener blockListener = new DLBlockListener(this);
+	final DLBlockInterface blockInterface = new DLBlockInterface(this);
 	// Create the main HashMap that contains Players mapped to their settings
 	HashMap<Player, DLPlayerConfig> dlUsers = new HashMap<Player, DLPlayerConfig>();
 	// Create a PermissionHandler (used for interacting with Permissions)
@@ -83,7 +84,7 @@ public class DispenserLoader extends JavaPlugin {
 	 *            Amount to enable the player with
 	 * @return false if amount is over 576, otherwise true
 	 */
-	boolean hmEnable(Player player, int material, int amount) {
+	private boolean hmEnable(Player player, int material, int amount) {
 		// Intelligence check - dont use more than 576 material
 		if (amount > 576) {
 			return false;
@@ -108,7 +109,7 @@ public class DispenserLoader extends JavaPlugin {
 	 * @param player
 	 *            Player to remove
 	 */
-	void hmDisable(Player player) {
+	private void hmDisable(Player player) {
 		this.dlUsers.remove(player);
 		player.sendMessage(ChatColor.DARK_AQUA + "DispenserLoader Disabled");
 	}
@@ -181,7 +182,11 @@ public class DispenserLoader extends JavaPlugin {
 			// If player not enabled, enable player with default values then
 			// fall through to process arguments properly
 			if (!enabled(player)) {
-				hmEnable(player, 262, 64);
+				if (!hmEnable(player, 262, 64)) {
+					player.sendMessage(ChatColor.RED
+							+ "Cannot use more than 576 material (576 = 64 * 9)");
+					return true;
+				}
 				giveWand(player);
 				if (debug)
 					log.info("DLOAD: player " + pName + " enabled");
@@ -332,6 +337,7 @@ public class DispenserLoader extends JavaPlugin {
 				boolean areaOperation = false;
 				String areaReportString = "";
 				int areaMaterial = pConfig.material;
+				short areaDamage = pConfig.damageValue;
 				int areaAmount = pConfig.amount;
 				
 				// Toggles individual dispender empty mode
@@ -372,9 +378,13 @@ public class DispenserLoader extends JavaPlugin {
 					} else {
 						if (argLength == 2) {
 							try {
-								areaMaterial = Integer.parseInt(args[1]);
+								ItemStack stack = getMaterialAndDamage(args[1]);
+								areaMaterial = stack.getTypeId();
+								areaDamage = stack.getDurability();
 							} catch (NumberFormatException e) {
-								reportInvalidInput(player);
+								player.sendMessage(ChatColor.RED
+										+ "Invalid material number and/or damage value");
+								return true;
 							}
 						}
 						areaFill = true;
@@ -399,11 +409,15 @@ public class DispenserLoader extends JavaPlugin {
 					} else {
 						if (argLength >= 2) {
 							try {
-								areaMaterial = Integer.parseInt(args[1]);
+								ItemStack stack = getMaterialAndDamage(args[1]);
+								areaMaterial = stack.getTypeId();
+								areaDamage = stack.getDurability();
 								if (argLength == 3)
 									areaAmount = Integer.parseInt(args[2]);
 							} catch (NumberFormatException e) {
-								reportInvalidInput(player);
+								player.sendMessage(ChatColor.RED
+										+ "Invalid material number and/or damage value");
+								return true;
 							}
 						}
 						areaOperation = true;
@@ -416,10 +430,10 @@ public class DispenserLoader extends JavaPlugin {
 				if (areaOperation) {
 					if (pConfig.areaBlock1 instanceof Block
 							&& pConfig.areaBlock2 instanceof Block) {
-						int i_blocksChanged = blockListener.areaEffect(
+						int i_blocksChanged = blockInterface.areaEffect(
 								pConfig.areaBlock1, pConfig.areaBlock2,
-								player.getWorld(), areaMaterial, areaAmount,
-								areaFill, areaEmpty, dlUsers.get(player));
+								areaMaterial, areaAmount, areaDamage, areaFill,
+								areaEmpty, dlUsers.get(player));
 						player.sendMessage(ChatColor.DARK_AQUA
 								+ ""
 								+ i_blocksChanged
@@ -438,32 +452,45 @@ public class DispenserLoader extends JavaPlugin {
 				
 				// If player entered 2 ints, set these to material and amount
 				if (argLength == 2) {
-					if (isInt(args[0]) && isInt(args[1])) {
-						pConfig.material = Integer.parseInt(args[0]);
+					try {
+						ItemStack stack = getMaterialAndDamage(args[0]);
+						pConfig.material = stack.getTypeId();
+						pConfig.damageValue = stack.getDurability();
 						pConfig.amount = Integer.parseInt(args[1]);
-						player.sendMessage(ChatColor.DARK_AQUA
-								+ "Material set to " + pConfig.material
-								+ ", amount set to " + pConfig.amount + ".");
-						if (debug)
-							log.info("DLOAD: player " + pName
-									+ "assigned material " + pConfig.material
-									+ " and amount " + pConfig.amount + ".");
+					} catch (NumberFormatException e) {
+						player.sendMessage(ChatColor.RED
+								+ "Invalid material number and/or damage value");
 						return true;
 					}
+					
+					player.sendMessage(ChatColor.DARK_AQUA + "Material set to "
+							+ pConfig.material + ":" + pConfig.damageValue
+							+ ", amount set to " + pConfig.amount + ".");
+					if (debug)
+						log.info("DLOAD: player " + pName
+								+ "assigned material " + pConfig.material + ":"
+								+ pConfig.damageValue + " and amount "
+								+ pConfig.amount + ".");
+					return true;
 				}
 				
 				// If player entered 1 int, set this to material
 				if (argLength == 1) {
-					if (isInt(args[0])) {
-						pConfig.material = Integer.parseInt(args[0]);
-						player.sendMessage(ChatColor.DARK_AQUA
-								+ "Material set to " + pConfig.material + ".");
-						if (debug)
-							log.info("DLOAD: player " + pName
-									+ "assigned material " + pConfig.material
-									+ ".");
+					try {
+						ItemStack stack = getMaterialAndDamage(args[0]);
+						pConfig.material = stack.getTypeId();
+						pConfig.damageValue = stack.getDurability();
+					} catch (NumberFormatException e) {
+						player.sendMessage(ChatColor.RED
+								+ "Invalid material number and/or damage value");
 						return true;
 					}
+					player.sendMessage(ChatColor.DARK_AQUA + "Material set to "
+							+ pConfig.material + ".");
+					if (debug)
+						log.info("DLOAD: player " + pName
+								+ "assigned material " + pConfig.material + ".");
+					return true;
 				}
 				
 				// Return if we ever reach this point (all valid commands
@@ -483,7 +510,7 @@ public class DispenserLoader extends JavaPlugin {
 	 *            The player to check
 	 * @return True if player is allowed, otherwise false
 	 */
-	boolean playerAllowed(Player player) {
+	private boolean playerAllowed(Player player) {
 		if (this.getServer().getPluginManager().getPlugin("Permissions") != null
 				&& DispenserLoader.permissionHandler != null) {
 			if (DispenserLoader.permissionHandler.has(player, "dload.use")) {
@@ -501,7 +528,7 @@ public class DispenserLoader extends JavaPlugin {
 	 * @param s
 	 *            commandSender to report to
 	 */
-	void reportInvalidInput(CommandSender s) {
+	private void reportInvalidInput(CommandSender s) {
 		s.sendMessage(ChatColor.RED
 				+ "Invalid command. For help, type /dload help or see the command reference");
 	}
@@ -541,7 +568,7 @@ public class DispenserLoader extends JavaPlugin {
 	 * @param args
 	 *            Arguments passed to the function
 	 */
-	void handleConsoleInput(CommandSender sender, String[] args) {
+	private void handleConsoleInput(CommandSender sender, String[] args) {
 		if (args[0].equalsIgnoreCase("userinfo")) {
 			String playerName = args[1];
 			if (debug)
@@ -570,11 +597,28 @@ public class DispenserLoader extends JavaPlugin {
 	 *            String to check if is an int
 	 * @return True if str is an integer, otherwise false
 	 */
-	boolean isInt(String str) {
+	private boolean isInt(String str) {
 		try {
 			Integer.parseInt(str);
 			return true;
 		} catch (NumberFormatException e) {}
 		return false;
+	}
+	
+	private ItemStack getMaterialAndDamage(String str)
+			throws NumberFormatException {
+		int mat = 0;
+		short dmg = 0;
+		
+		if (str.contains(":")) {
+			String[] subs = str.split(":");
+			Short.parseShort(subs[1]);
+			mat = Integer.parseInt(subs[0]);
+			dmg = Short.parseShort(subs[1]);
+		} else {
+			mat = Integer.parseInt(str);
+			dmg = 0;
+		}
+		return new ItemStack(mat, 64, dmg);
 	}
 }

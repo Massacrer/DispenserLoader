@@ -16,6 +16,7 @@ class DLPlayerConfig {
 	int material = 262;
 	int amount = 64;
 	int wandItem = 269;
+	short damageValue = 0;
 	boolean singleClearMode = false;
 	boolean blockAreaMode = false;
 	boolean singleFillMode = false;
@@ -63,6 +64,12 @@ class DLPlayerConfig {
 		if (plugin.debug)
 			log.info("DL: setMaterial called for player " + player.getName()
 					+ " (material: " + material + ").");
+	}
+	
+	void materialAndDamage(String str) {
+		String[] strs = str.split(":");
+		this.material = Integer.parseInt(strs[0]);
+		this.damageValue = Short.parseShort(strs[1]);
 	}
 	
 	/**

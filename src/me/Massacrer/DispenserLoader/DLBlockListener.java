@@ -1,20 +1,15 @@
 package me.Massacrer.DispenserLoader;
 
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.logging.Logger;
 import org.bukkit.block.Block;
 import org.bukkit.block.ContainerBlock;
 import org.bukkit.ChatColor;
 import org.bukkit.GameMode;
-import org.bukkit.Location;
 import org.bukkit.Material;
-import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockDamageEvent;
 import org.bukkit.event.block.BlockListener;
-import org.bukkit.inventory.ItemStack;
 
 /**
  * Dispenser Loader block listener
@@ -25,11 +20,13 @@ import org.bukkit.inventory.ItemStack;
 
 class DLBlockListener extends BlockListener {
 	
-	private final DispenserLoader plugin;
+	final DispenserLoader plugin;
+	private DLBlockInterface blockInterface = null;
 	static Logger log = DispenserLoader.log;
 	
 	DLBlockListener(final DispenserLoader plugin) {
 		this.plugin = plugin;
+		blockInterface = plugin.blockInterface;
 	}
 	
 	/**
@@ -61,7 +58,7 @@ class DLBlockListener extends BlockListener {
 														// single block mode
 					ContainerBlock targetBlock = (ContainerBlock) event.getBlock().getState();
 					if (pConfig.singleClearMode) {
-						emptyContainer(targetBlock);
+						blockInterface.emptyContainer(targetBlock);
 						if (pConfig.clearOnce) {
 							pConfig.clearOnce = false;
 							pConfig.singleClearMode = false;
@@ -74,7 +71,8 @@ class DLBlockListener extends BlockListener {
 									+ " in single clear mode.");
 					}
 					if (pConfig.singleFillMode) {
-						fill(targetBlock, pConfig.material);
+						blockInterface.fill(targetBlock, pConfig.material,
+								pConfig.damageValue);
 						if (pConfig.fillOnce) {
 							plugin.dlUsers.get(player).fillOnce = false;
 							plugin.dlUsers.get(player).singleFillMode = false;
@@ -90,7 +88,8 @@ class DLBlockListener extends BlockListener {
 									+ pConfig.material + ".");
 					}
 					if (!pConfig.singleClearMode && !pConfig.singleFillMode) {
-						add(targetBlock, pConfig.material, pConfig.amount);
+						blockInterface.add(targetBlock, pConfig.material,
+								pConfig.amount, pConfig.damageValue);
 						player.sendMessage(ChatColor.DARK_AQUA
 								+ blockTypeStringUCase + " filled with "
 								+ pConfig.amount + " of item type "
@@ -193,154 +192,6 @@ class DLBlockListener extends BlockListener {
 		} else {
 			player.sendMessage(ChatColor.DARK_AQUA + "Second block set at "
 					+ block.getX() + "," + block.getY() + "," + block.getZ());
-		}
-	}
-	
-	/**
-	 * Causes an effect to multiple dispensers by determining the 3D area that
-	 * is selected, and then looping to cover this area
-	 * 
-	 * @param first
-	 *            First block in selection
-	 * @param second
-	 *            Second block in selection
-	 * @param world
-	 *            World the event was called in
-	 * @param material
-	 *            Material to update the dispensers with
-	 * @param amount
-	 *            Amount of material to update the dispensers with
-	 * @param fill
-	 *            Whether or not to fill the dispensers up
-	 * @param clear
-	 *            Whether or not to clear the dispensers
-	 * @return number of dispensers modified
-	 */
-	int areaEffect(Block first, Block second, World world, int material,
-			int amount, boolean fill, boolean clear, DLPlayerConfig pConfig) {
-		int numberChanged = 0;
-		int x1 = first.getX();
-		int y1 = first.getY();
-		int z1 = first.getZ();
-		int x2 = second.getX();
-		int y2 = second.getY();
-		int z2 = second.getZ();
-		
-		int temp = 0;
-		if (x1 > x2) {
-			temp = x1;
-			x1 = x2;
-			x2 = temp;
-		}
-		if (y1 > y2) {
-			temp = y1;
-			y1 = y2;
-			y2 = temp;
-		}
-		if (z1 > z2) {
-			temp = z1;
-			z1 = z2;
-			z2 = temp;
-		}
-		
-		for (int a = x1; a <= x2; a++) {
-			for (int b = y1; b <= y2; b++) {
-				for (int c = z1; c <= z2; c++) {
-					// Gets the block at the coordinates at the current point in
-					// the for loops
-					Block block = (new Location(world, a, b, c, 0, 0)).getBlock();
-					// Obligatory check for dispenser blocks
-					if (block.getType() == (pConfig.chestMode ? Material.CHEST
-							: Material.DISPENSER)) {
-						// If command was /area empty, empty inventories
-						if (clear) {
-							emptyContainer((ContainerBlock) block.getState());
-							numberChanged++;
-							continue;
-						}
-						// If command was /area fill
-						if (fill) {
-							fill((ContainerBlock) block.getState(), material);
-							numberChanged++;
-							continue;
-						}
-						// If command was /area add
-						if (!fill && !clear) {
-							add((ContainerBlock) block.getState(), material,
-									amount);
-							numberChanged++;
-							continue;
-						}
-					}
-				}
-			}
-		}
-		return numberChanged;
-	}
-	
-	/**
-	 * Empties a single dispenser
-	 * 
-	 * @param dispenser
-	 *            Dispenser to empty
-	 */
-	void emptyContainer(ContainerBlock container) {
-		container.getInventory().clear();
-	}
-	
-	/**
-	 * Fills a single dispenser with material
-	 * 
-	 * @param target
-	 *            Dispenser to fill
-	 * @param material
-	 *            Material to fill it with
-	 */
-	void fill(ContainerBlock target, int material) {
-		ItemStack items = new ItemStack(material, 64);
-		HashMap<Integer, ItemStack> overflowItems = new HashMap<Integer, ItemStack>();
-		do {
-			overflowItems.putAll(target.getInventory().addItem(items));
-		} while (overflowItems.isEmpty());
-	}
-	
-	/**
-	 * Adds an amount of material to a single dispenser
-	 * 
-	 * @param target
-	 *            Dispenser to add to
-	 * @param material
-	 *            Material to put in
-	 * @param amount
-	 *            Amount of material to put in
-	 */
-	void add(ContainerBlock target, int material, int amount) {
-		ArrayList<ItemStack> items = new ArrayList<ItemStack>();
-		try {
-			if (amount <= 64) {
-				items.add(new ItemStack(material, amount));
-			}
-			while (amount > 64) {
-				items.add(new ItemStack(material, amount));
-				amount -= 64;
-				if (amount < 64 && amount < 0) {
-					items.add(new ItemStack(material, amount));
-				}
-			}
-		} catch (ArrayIndexOutOfBoundsException ex) {
-			log.warning("Unplanned exception thrown, see stack trace: ");
-			ex.printStackTrace();
-		}
-		
-		if (plugin.debug) {
-			log.info("DL: aTD: items.size() = " + items.size());
-		}
-		for (int i = 0; i < items.size(); i++) {
-			if (plugin.debug) {
-				log.info("DL: addToContainerBlock: i = " + i
-						+ ", i.items.getType() = " + items.get(i).getTypeId());
-			}
-			target.getInventory().addItem(items.get(i));
 		}
 	}
 }
