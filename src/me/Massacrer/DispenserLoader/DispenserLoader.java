@@ -591,20 +591,6 @@ public class DispenserLoader extends JavaPlugin {
 		}
 	}
 	
-	/**
-	 * 
-	 * @param str
-	 *            String to check if is an int
-	 * @return True if str is an integer, otherwise false
-	 */
-	private boolean isInt(String str) {
-		try {
-			Integer.parseInt(str);
-			return true;
-		} catch (NumberFormatException e) {}
-		return false;
-	}
-	
 	private ItemStack getMaterialAndDamage(String str)
 			throws NumberFormatException {
 		int mat = 0;

@@ -25,7 +25,6 @@ class DLPlayerListener extends PlayerListener {
 		if (plugin.enabled(event.getPlayer())) {
 			plugin.dlUsers.remove(event.getPlayer());
 		}
-		
 	}
 	
 }

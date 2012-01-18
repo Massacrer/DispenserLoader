@@ -166,12 +166,23 @@ class DLBlockListener extends BlockListener {
 	} // End of onBlockDamage code
 	
 	public void onBlockBreak(BlockBreakEvent event) {
-		if (event.getPlayer().getGameMode() == GameMode.CREATIVE) {
-			event.setCancelled(true);
+		if (plugin.enabled(event.getPlayer())
+				&& event.getPlayer().getGameMode() == GameMode.CREATIVE
+				&& event.getPlayer().getItemInHand().getTypeId() == plugin.dlUsers.get(event.getPlayer()).wandItem) {
+			DLPlayerConfig pConfig = plugin.dlUsers.get(event.getPlayer());
+			
+			// Make sure not to run onBlockDamage in a state that it will not
+			// accept due to hitting an invalid block for single-block mode
+			if (!(event.getBlock().getType() == (pConfig.chestMode ? Material.CHEST
+					: Material.DISPENSER))
+					&& !(pConfig.blockAreaMode)) {
+				return;
+			}
+			
 			BlockDamageEvent bde = new BlockDamageEvent(event.getPlayer(),
 					event.getBlock(), event.getPlayer().getItemInHand(), false);
-			bde.setCancelled(true);
 			this.onBlockDamage(bde);
+			event.setCancelled(true);
 		}
 	}
 	

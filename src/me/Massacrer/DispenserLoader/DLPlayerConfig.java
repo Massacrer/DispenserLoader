@@ -100,7 +100,7 @@ class DLPlayerConfig {
 			this.singleFillMode = false;
 			this.clearOnce = false;
 			this.fillOnce = false;
-			player.sendMessage("Area mode disabled, now in single-block adding mode");
+			player.sendMessage(ChatColor.DARK_AQUA + "Area mode disabled, now in single-block adding mode");
 		} else {
 			this.blockAreaMode = true;
 			player.sendMessage(ChatColor.DARK_AQUA
