@@ -33,7 +33,7 @@ class DLBlockListener extends BlockListener {
 	 * Called by Bukkit, main code block for this class
 	 */
 	public void onBlockDamage(BlockDamageEvent event) {
-		event.setCancelled(true);
+		
 		Block block = event.getBlock();
 		Player player = event.getPlayer();
 		DLPlayerConfig pConfig = plugin.dlUsers.get(player);
@@ -42,6 +42,11 @@ class DLBlockListener extends BlockListener {
 		// the wand item
 		if (plugin.enabled(player)
 				&& player.getItemInHand().getTypeId() == pConfig.wandItem) {
+			
+			// Cancel the event <i>inside</i> the check. Thank you, sanity
+			// checking.
+			event.setCancelled(true);
+			
 			if (plugin.debug) {
 				log.info("Block event recognised: player " + player.getName()
 						+ ", block " + block.getX() + "," + block.getY() + ","
