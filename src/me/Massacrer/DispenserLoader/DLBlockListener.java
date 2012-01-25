@@ -7,9 +7,11 @@ import org.bukkit.ChatColor;
 import org.bukkit.GameMode;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
+import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockDamageEvent;
-import org.bukkit.event.block.BlockListener;
 
 /**
  * Dispenser Loader block listener
@@ -18,7 +20,7 @@ import org.bukkit.event.block.BlockListener;
  * 
  */
 
-class DLBlockListener extends BlockListener {
+class DLBlockListener implements Listener {
 	
 	final DispenserLoader plugin;
 	private DLBlockInterface blockInterface = null;
@@ -32,6 +34,7 @@ class DLBlockListener extends BlockListener {
 	/**
 	 * Called by Bukkit, main code block for this class
 	 */
+	@EventHandler(priority=EventPriority.NORMAL)
 	public void onBlockDamage(BlockDamageEvent event) {
 		
 		Block block = event.getBlock();
@@ -170,6 +173,7 @@ class DLBlockListener extends BlockListener {
 		} // End of run validity check code
 	} // End of onBlockDamage code
 	
+	@EventHandler(priority=EventPriority.NORMAL)
 	public void onBlockBreak(BlockBreakEvent event) {
 		if (plugin.enabled(event.getPlayer())
 				&& event.getPlayer().getGameMode() == GameMode.CREATIVE

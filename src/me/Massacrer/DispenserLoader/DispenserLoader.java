@@ -6,8 +6,6 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.ChatColor;
-import org.bukkit.event.Event;
-import org.bukkit.event.Event.Priority;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -47,12 +45,8 @@ public class DispenserLoader extends JavaPlugin {
 		// Define the plugin manager
 		pluginManager = getServer().getPluginManager();
 		// Register to be informed by the server when events occur
-		pluginManager.registerEvent(Event.Type.BLOCK_DAMAGE, blockListener,
-				Priority.Normal, this);
-		pluginManager.registerEvent(Event.Type.BLOCK_BREAK, blockListener,
-				Priority.Normal, this);
-		pluginManager.registerEvent(Event.Type.PLAYER_QUIT, playerListener,
-				Priority.Normal, this);
+		pluginManager.registerEvents(playerListener, this);
+		pluginManager.registerEvents(blockListener, this);
 		// Output to log that the plugin is enabled
 		log.info("DispenserLoader enabled");
 		// Self-explanatory

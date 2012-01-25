@@ -1,6 +1,8 @@
 package me.Massacrer.DispenserLoader;
 
-import org.bukkit.event.player.PlayerListener;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
+import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerQuitEvent;
 import me.Massacrer.DispenserLoader.DispenserLoader;
 
@@ -10,7 +12,7 @@ import me.Massacrer.DispenserLoader.DispenserLoader;
  * @author Massacrer
  * 
  */
-class DLPlayerListener extends PlayerListener {
+class DLPlayerListener implements Listener {
 	private final DispenserLoader plugin;
 	
 	public DLPlayerListener(DispenserLoader instance) {
@@ -21,6 +23,7 @@ class DLPlayerListener extends PlayerListener {
 	 * Called by Bukkit when player quits, used to remove the player from config
 	 * when they quit.
 	 */
+	@EventHandler(priority=EventPriority.NORMAL)
 	public void onPlayerQuit(PlayerQuitEvent event) {
 		if (plugin.enabled(event.getPlayer())) {
 			plugin.dlUsers.remove(event.getPlayer());
